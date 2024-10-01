@@ -140,3 +140,4 @@ packages/
 # Build
 Server/Binaries
 Server/Libraries
+Server/Intermediate
