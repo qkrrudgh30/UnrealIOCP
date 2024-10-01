@@ -1,7 +1,5 @@
 #pragma once
 
-#include "Types.h"
-
 #include <iostream>
 #include <vector>
 #include <list>
@@ -14,7 +12,13 @@
 #include <thread>
 #include <atomic>
 #include <mutex>
+#include <windows.h> 
+
+#include "Types.h"
+#include "CoreTLS.h"
+#include "CoreMacro.h"
+#include "ThreadManager.h"
 
 using namespace std;
 
-void HelloServer();
+//void HelloServer();

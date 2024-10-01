@@ -1,39 +1,20 @@
 #include "pch.h"
-#include "AccountManager.h"
-#include "UserManager.h"
 
-void InvokeProcessSaveFunction()
+void ThreadMain()
 {
-    for (uint32 i = 0; i < 100'000; ++i)
+    while (true)
     {
-        GSUserManager::GetInstance()->ProcessSave();
-    }
-}
-
-void InvokeProcessLoginFunction()
-{
-    for (uint32 i = 0; i < 100'000; ++i)
-    {
-        GSAccountManager::GetInstance()->ProcessLogin();
+        cout << "Hello, I'm thread" << LThreadID << endl;
+        this_thread::sleep_for(1s);
     }
 }
 
 int main()
 {
-    thread t1(InvokeProcessSaveFunction);
-    thread t2(InvokeProcessLoginFunction);
-
-    if (t1.joinable() == true)
-    {
-        t1.join();
+    for (uint32 i = 0; i < 5; ++i) 
+    { 
+        SCThreadManager::GetInstance().Launch(ThreadMain); 
     }
-
-    if (t2.joinable() == true)
-    {
-        t2.join();
-    }
-
-    cout << "Jobs done." << endl;
 
     return 0;
 }

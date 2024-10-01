@@ -1,9 +1,9 @@
-// CorePCH.cpp
-
 #include "pch.h"
-#include "CorePch.h"
+#include "CorePCH.h"
 
+/*
 void HelloServer()
 {
     cout << "Hello, Server!" << endl;
 }
+*/

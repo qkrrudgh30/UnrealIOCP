@@ -1,5 +1,3 @@
-// Types.h
-
 #pragma once
 
 #define OUT
