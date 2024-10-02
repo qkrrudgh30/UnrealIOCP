@@ -12,7 +12,15 @@
 #include <thread>
 #include <atomic>
 #include <mutex>
-#include <windows.h> 
+
+#define _WINSOCK_DEPRECATED_NO_WARNINGS // winsock c4996 Ã³¸®
+
+#pragma comment(lib, "ws2_32.lib")
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include <mswsock.h>
+
+#include <windows.h>
 
 #include "Types.h"
 #include "CoreTLS.h"
@@ -20,5 +28,3 @@
 #include "ThreadManager.h"
 
 using namespace std;
-
-//void HelloServer();
