@@ -21,6 +21,7 @@
 #include <mswsock.h>
 
 #include <windows.h>
+#include <cassert>
 
 #include "Types.h"
 #include "CoreTLS.h"

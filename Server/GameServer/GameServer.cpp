@@ -1,5 +1,75 @@
 #include "pch.h"
 
+enum class EIOType
+{
+    None,
+    Accept,
+    Connect,
+    Read,
+    Write,
+    Disconnect,
+};
+
+struct GSSession
+{
+    SOCKET Socket = INVALID_SOCKET;
+
+    char RecvBuffer[1000] = {};
+
+    int32 RecvBufferLength = 0;
+
+};
+
+struct GSExtendedOverlapped
+{
+    WSAOVERLAPPED Overlapped = {};
+
+    EIOType IOType = EIOType::None;
+
+};
+
+void HandleError(const char* cause)
+{
+    int32 ErrorCode = ::WSAGetLastError();
+    cout << cause << " ErrorCode : " << ErrorCode << endl;
+}
+
+void ProcessRecv(HANDLE IOCPHandle)
+{
+    while (true)
+    {
+        DWORD TransferredBytes = 0;
+        GSSession* Session = nullptr;
+        GSExtendedOverlapped* ExtendedOverlapped = nullptr;
+
+        BOOL ReturnedStatus = ::GetQueuedCompletionStatus(
+            IOCPHandle,
+            &TransferredBytes,
+            (ULONG_PTR*)&Session,
+            (LPOVERLAPPED*)&ExtendedOverlapped,
+            INFINITE
+        );
+
+        if (ReturnedStatus == FALSE || TransferredBytes == 0)
+        {
+            HandleError("GetQueuedCompletionStatus()");
+            continue;
+        }
+
+        assert(ExtendedOverlapped->IOType == EIOType::Read && "ExtendedOverlapped->IOType != EIOType::Read");
+
+        cout << "Recv Data IOCP = " << TransferredBytes << endl;
+
+        WSABUF WindowsSocketAPIBuffer;
+        WindowsSocketAPIBuffer.buf = Session->RecvBuffer;
+        WindowsSocketAPIBuffer.len = 1000;
+
+        DWORD ReceiveLength = 0;
+        DWORD Flags = 0;
+        ::WSARecv(Session->Socket, &WindowsSocketAPIBuffer, 1, &ReceiveLength, &Flags, &ExtendedOverlapped->Overlapped, NULL);
+    }
+}
+
 int main()
 {
     WSAData WindowsSocketAPIData;
@@ -11,16 +81,7 @@ int main()
     SOCKET ServerSocket = ::socket(AF_INET, SOCK_STREAM, 0);
     if (ServerSocket == INVALID_SOCKET)
     {
-        int32 ErrorCode = ::WSAGetLastError();
-        cout << "Socket ErrorCode : " << ErrorCode << endl;
-        return 0;
-    }
-
-    int32 opt = 1;
-    if (::setsockopt(ServerSocket, SOL_SOCKET, SO_REUSEADDR, (const char*)&opt, sizeof(opt)) == SOCKET_ERROR)
-    {
-        int32 ErrorCode = ::WSAGetLastError();
-        cout << "SetSockOpt ErrorCode : " << ErrorCode << endl;
+        HandleError("socket()");
         return 0;
     }
 
@@ -32,59 +93,61 @@ int main()
 
     if (::bind(ServerSocket, (SOCKADDR*)&ServerAddress, sizeof(ServerAddress)) == SOCKET_ERROR)
     {
-        int32 ErrorCode = ::WSAGetLastError();
-        cout << "Bind ErrorCode : " << ErrorCode << endl;
+        HandleError("bind()");
         return 0;
     }
 
-    if (::listen(ServerSocket, 10) == SOCKET_ERROR)
+    if (::listen(ServerSocket, SOMAXCONN) == SOCKET_ERROR)
     {
-        int32 ErrorCode = ::WSAGetLastError();
-        cout << "Listen ErrorCode : " << ErrorCode << endl;
+        HandleError("listen()");
         return 0;
+    }
+
+    cout << "Server is now listening!" << endl;
+
+    vector<GSSession*> SessionManager;
+
+    HANDLE IOCPHandle = ::CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 0);
+
+    for (int32 i = 0; i < 5; i++)
+    {
+        SCThreadManager::GetInstance().Launch(
+            [=]() -> void
+            {
+                ProcessRecv(IOCPHandle);
+            }
+        );
     }
 
     while (true)
     {
         SOCKADDR_IN ClientAddress;
-        ::memset(&ClientAddress, 0, sizeof(ClientAddress));
-        int32 AddressSize = sizeof(ClientAddress);
+        int32 AddressLength = sizeof(ClientAddress);
 
-        SOCKET ClientSocket = ::accept(ServerSocket, (SOCKADDR*)&ClientAddress, &AddressSize);
+        SOCKET ClientSocket = ::accept(ServerSocket, (SOCKADDR*)&ClientAddress, &AddressLength);
         if (ClientSocket == INVALID_SOCKET)
         {
-            int32 ErrorCode = ::WSAGetLastError();
-            cout << "Accept ErrorCode : " << ErrorCode << endl;
             return 0;
         }
 
-        char* IPAddress = inet_ntoa(ClientAddress.sin_addr);
-        cout << "Connected Client IP: " << IPAddress << endl;
+        GSSession* ClientSession = new GSSession();
+        ClientSession->Socket = ClientSocket;
+        SessionManager.push_back(ClientSession);
 
-        while (true)
-        {
-            char RecvBuffer[1000];
+        cout << "Client Connected !" << endl;
 
-            int32 RecvBufferLength = ::recv(ClientSocket, RecvBuffer, sizeof(RecvBuffer), 0);
-            if (RecvBufferLength <= 0)
-            {
-                int32 ErrorCode = ::WSAGetLastError();
-                cout << "RecvBufferLength ErrorCode: " << ErrorCode << endl;
-                return 0;
-            }
+        ::CreateIoCompletionPort((HANDLE)ClientSocket, IOCPHandle, (ULONG_PTR)ClientSession, 0);
+        
+        WSABUF WindowsSocketAPIBuffer;
+        WindowsSocketAPIBuffer.buf = ClientSession->RecvBuffer;
+        WindowsSocketAPIBuffer.len = 1000;
 
-            RecvBuffer[RecvBufferLength] = '\0';
-            cout << "ReceivedBuffer: " << RecvBuffer << endl;
-            cout << "RecvBufferLength: " << RecvBufferLength << endl;
+        GSExtendedOverlapped* OverlappedEx = new GSExtendedOverlapped();
+        OverlappedEx->IOType = EIOType::Read;
 
-            int32 ResultCode = ::send(ClientSocket, RecvBuffer, RecvBufferLength, 0);
-            if (ResultCode == SOCKET_ERROR)
-            {
-                int32 ErrorCode = ::WSAGetLastError();
-                cout << "Send ErrorCode: " << ErrorCode << endl;
-                return 0;
-            }
-        }
+        DWORD ReceiveLength = 0;
+        DWORD Flags = 0;
+        ::WSARecv(ClientSocket, &WindowsSocketAPIBuffer, 1, &ReceiveLength, &Flags, &OverlappedEx->Overlapped, NULL);
     }
 
     ::WSACleanup();
