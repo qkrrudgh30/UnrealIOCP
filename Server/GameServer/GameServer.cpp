@@ -57,6 +57,34 @@ int main()
             cout << "Accept ErrorCode : " << ErrorCode << endl;
             return 0;
         }
+
+        char* IPAddress = inet_ntoa(ClientAddress.sin_addr);
+        cout << "Connected Client IP: " << IPAddress << endl;
+
+        while (true)
+        {
+            char RecvBuffer[1000];
+
+            int32 RecvBufferLength = ::recv(ClientSocket, RecvBuffer, sizeof(RecvBuffer), 0);
+            if (RecvBufferLength <= 0)
+            {
+                int32 ErrorCode = ::WSAGetLastError();
+                cout << "RecvBufferLength ErrorCode: " << ErrorCode << endl;
+                return 0;
+            }
+
+            RecvBuffer[RecvBufferLength] = '\0';
+            cout << "ReceivedBuffer: " << RecvBuffer << endl;
+            cout << "RecvBufferLength: " << RecvBufferLength << endl;
+
+            int32 ResultCode = ::send(ClientSocket, RecvBuffer, RecvBufferLength, 0);
+            if (ResultCode == SOCKET_ERROR)
+            {
+                int32 ErrorCode = ::WSAGetLastError();
+                cout << "Send ErrorCode: " << ErrorCode << endl;
+                return 0;
+            }
+        }
     }
 
     ::WSACleanup();
