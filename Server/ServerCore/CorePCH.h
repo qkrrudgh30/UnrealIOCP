@@ -27,6 +27,8 @@
 #include "CoreTLS.h"
 #include "CoreMacro.h"
 #include "ThreadManager.h"
+#include "NetAddress.h"
 #include "SocketUtils.h"
+#include "Listener.h"
 
 using namespace std;

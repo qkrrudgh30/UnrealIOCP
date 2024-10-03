@@ -4,12 +4,10 @@
 
 SCThreadManager::SCThreadManager()
 {
-    InitTLS();
 }
 
 SCThreadManager::~SCThreadManager()
 {
-    Join();
 }
 
 SCThreadManager& SCThreadManager::GetInstance()
@@ -45,11 +43,11 @@ void SCThreadManager::DestroyTLS()
 
 void SCThreadManager::Join()
 {
-    for (std::thread& t : Threads)
+    for (std::thread& Thread : Threads)
     {
-        if (t.joinable() == true)
+        if (Thread.joinable() == true)
         {
-            t.join();
+            Thread.join();
         }
     }
 

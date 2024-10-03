@@ -18,3 +18,10 @@ using uint64 = unsigned __int64;
 #define len32(arr)		static_cast<int32>(sizeof(arr)/sizeof(arr[0]))
 	// sizeof(buffer)를 했을때, wchar[]의 원소는 2바이트 크기라 제대로 반환 안될수도 있음.
 	// 그래서 따로 len32() 매크로 함수를 정의함.
+
+#define USING_SHARED_PTR(InClassName) using SharedPtr##InClassName = std::shared_ptr<class InClassName>;
+
+USING_SHARED_PTR(SCIOCPCore);
+USING_SHARED_PTR(SCIOCPObject);
+USING_SHARED_PTR(SCSession);
+USING_SHARED_PTR(SCListener);

@@ -1,6 +1,5 @@
 #include "pch.h"
 #include "SocketUtils.h"
-#include "NetAddress.h"
 
 LPFN_CONNECTEX SCSocketUtils::ConnectEx = nullptr;
 LPFN_DISCONNECTEX SCSocketUtils::DisconnectEx = nullptr;
@@ -9,25 +8,33 @@ LPFN_ACCEPTEX SCSocketUtils::AcceptEx = nullptr;
 void SCSocketUtils::Init()
 {
 	WSADATA WindowsSocketAPIData;
-	assert(::WSAStartup(MAKEWORD(2, 2), OUT & WindowsSocketAPIData) == 0 & "::WSAStartup(MAKEWORD(2, 2), OUT & WindowsSocketAPIData) != 0");
+	int32 ResultCode = ::WSAStartup(MAKEWORD(2, 2), OUT & WindowsSocketAPIData);
+	assert(ResultCode == 0 && "::WSAStartup(MAKEWORD(2, 2), OUT & WindowsSocketAPIData) != 0");
 
 	SOCKET DummySocket = CreateSocket();
 		// 더미 소켓을 하나 만들고 해당 소켓을 기준으로 함수를 호출.
-	assert(BindWindowsFunction(DummySocket, WSAID_CONNECTEX, reinterpret_cast<LPVOID*>(&ConnectEx)) == true &
-			"BindWindowsFunction(DummySocket, WSAID_CONNECTEX, reinterpret_cast<LPVOID*>(&ConnectEx)) == true");
-	assert(BindWindowsFunction(DummySocket, WSAID_ACCEPTEX, reinterpret_cast<LPVOID*>(&AcceptEx)) == true & 
-			"BindWindowsFunction(DummySocket, WSAID_ACCEPTEX, reinterpret_cast<LPVOID*>(&AcceptEx)) == true");
-	assert(BindWindowsFunction(DummySocket, WSAID_DISCONNECTEX, reinterpret_cast<LPVOID*>(&DisconnectEx)) == true & 
-			"BindWindowsFunction(DummySocket, WSAID_DISCONNECTEX, reinterpret_cast<LPVOID*>(&DisconnectEx)) == false");
+
+	bool bIsConnectFunctionBound = BindWindowsFunction(DummySocket, WSAID_CONNECTEX, reinterpret_cast<LPVOID*>(&ConnectEx));
+	assert(bIsConnectFunctionBound == true && "BindWindowsFunction(DummySocket, WSAID_CONNECTEX, reinterpret_cast<LPVOID*>(&ConnectEx)) == true");
+	bool bIsfAcceptFunctionBound = BindWindowsFunction(DummySocket, WSAID_ACCEPTEX, reinterpret_cast<LPVOID*>(&AcceptEx));
+	assert(bIsfAcceptFunctionBound == true && "BindWindowsFunction(DummySocket, WSAID_ACCEPTEX, reinterpret_cast<LPVOID*>(&AcceptEx)) == true");
+	bool bIsfDisconnectFunctionBound = BindWindowsFunction(DummySocket, WSAID_DISCONNECTEX, reinterpret_cast<LPVOID*>(&DisconnectEx));
+	assert(bIsfDisconnectFunctionBound == true && "BindWindowsFunction(DummySocket, WSAID_DISCONNECTEX, reinterpret_cast<LPVOID*>(&DisconnectEx)) == false");
 
 	Close(DummySocket);
 }
 
 SOCKET SCSocketUtils::CreateSocket()
 {
-	// 임의의 TCP 소켓을 만드는 함수.
-	// WSASocket() 함수를 활용하면 좀 더 자세한 옵션을 설정할 수 있음.
-	return ::WSASocket(AF_INET, SOCK_STREAM, IPPROTO_TCP, NULL, 0, WSA_FLAG_OVERLAPPED/*overlapped 함수들을 사용가능해짐.*/);
+	SOCKET sock = ::WSASocket(AF_INET, SOCK_STREAM, IPPROTO_TCP, NULL, 0, WSA_FLAG_OVERLAPPED);
+
+	if (sock == INVALID_SOCKET)
+	{
+		int error = WSAGetLastError();  // 오류 코드 확인
+		std::wcout << L"Socket creation failed. Error code: " << error << std::endl;
+	}
+
+	return sock;
 }
 
 bool SCSocketUtils::BindWindowsFunction(SOCKET InSocket, GUID InGUID, LPVOID* InCallback)
