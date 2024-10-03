@@ -30,5 +30,7 @@
 #include "NetAddress.h"
 #include "SocketUtils.h"
 #include "Listener.h"
+#include "Session.h"
+#include "Service.h"
 
 using namespace std;

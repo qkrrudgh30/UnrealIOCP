@@ -13,7 +13,8 @@ public:
     ~SCListener();
 
 public:
-    bool StartAccept(SCNetAddress InNetAddress);
+    //bool StartAccept(SCNetAddress InNetAddress);
+    bool StartAccept(SharedPtrSCServerService InServerService);
 
     void CloseSocket();
 
@@ -31,5 +32,7 @@ protected:
     SOCKET ServerSocket = INVALID_SOCKET;
 
     std::vector<SCAcceptEvent*> AcceptEvents;
+
+    SharedPtrSCServerService ServerService;
 
 };

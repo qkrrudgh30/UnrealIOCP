@@ -2,6 +2,7 @@
 #include "Listener.h"
 #include "IOCPEvent.h"
 #include "Session.h"
+#include "Service.h"
 
 SCListener::~SCListener()
 {
@@ -16,17 +17,22 @@ SCListener::~SCListener()
     }
 }
 
-bool SCListener::StartAccept(SCNetAddress InNetAddress)
+bool SCListener::StartAccept(SharedPtrSCServerService InServerService)
 {
+    ServerService = InServerService;
+    if (ServerService == nullptr)
+    {
+        return false;
+    }
+
     ServerSocket = SCSocketUtils::CreateSocket();
     if (ServerSocket == INVALID_SOCKET)
     {
         return false;
     }
 
-    //if (GIOCPCore.Register(this) == false)
-        // 컴파일 에러나는 코드.
-    if (GIOCPCore.Register(shared_from_this()) == false)
+    //if (GIOCPCore.Register(shared_from_this()) == false)
+    if (ServerService->GetIOCPCore()->Register(shared_from_this()) == false)
     {
         return false;
     }
@@ -41,7 +47,8 @@ bool SCListener::StartAccept(SCNetAddress InNetAddress)
         return false;
     }
 
-    if (SCSocketUtils::Bind(ServerSocket, InNetAddress) == false)
+    //if (SCSocketUtils::Bind(ServerSocket, InNetAddress) == false)
+    if (SCSocketUtils::Bind(ServerSocket, ServerService->GetNetAddress()) == false)
     {
         return false;
     }
@@ -51,12 +58,11 @@ bool SCListener::StartAccept(SCNetAddress InNetAddress)
         return false;
     }
 
-    const int32 AcceptCount = 1;
+    //const int32 AcceptCount = 1;
+    const int32 AcceptCount = ServerService->GetMaxSessionCount();
     for (int32 i = 0; i < AcceptCount; i++)
     {
         SCAcceptEvent* AcceptEvent = new SCAcceptEvent();
-        //AcceptEvent->OwnerIOCPObject = shared_ptr<SCIOCPObject>(this);
-            // 절대로 작성하면 안되는 코드. 참조 카운트가 1인 새로운 shared_ptr 만드는 짓. 즉, 동일한 raw pointer를 두 가지의 shared_ptr로 관리하는 것.
         AcceptEvent->OwnerIOCPObject = shared_from_this();
         AcceptEvents.push_back(AcceptEvent);
         RegisterAccept(AcceptEvent);
@@ -111,7 +117,8 @@ void SCListener::ProcessAccept(SCAcceptEvent* InAcceptEvent)
 
 void SCListener::RegisterAccept(SCAcceptEvent* InAcceptEvent)
 {
-    SharedPtrSCSession ClientSession = std::make_shared<SCSession>();
+    //SharedPtrSCSession ClientSession = std::make_shared<SCSession>();
+    SharedPtrSCSession ClientSession = ServerService->CreateSession();
 
     InAcceptEvent->Init();
     InAcceptEvent->ClientSession = ClientSession;
@@ -122,7 +129,6 @@ void SCListener::RegisterAccept(SCAcceptEvent* InAcceptEvent)
         const int32 ErrorCode = ::WSAGetLastError();
         if (ErrorCode != WSA_IO_PENDING)
         {
-            // 일단 다시 Accept 걸어준다
             RegisterAccept(InAcceptEvent);
         }
     }

@@ -28,6 +28,3 @@ private:
 	HANDLE IOCPHandle;
 
 };
-
-extern SCIOCPCore GIOCPCore;
-	// 임시 코드

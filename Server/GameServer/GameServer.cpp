@@ -1,20 +1,31 @@
 #include "pch.h"
 
+class SCGameSession : public SCSession
+{
+
+};
+
 int main()
 {
     SCSocketUtils::Init();
 
-    SharedPtrSCListener Listener = std::make_shared<SCListener>();
-    Listener->StartAccept(SCNetAddress(L"127.0.0.1", 8080));
+    SharedPtrSCServerService ServerService = std::make_shared<SCServerService>(
+        SCNetAddress(L"127.0.0.1", 8080),
+        std::make_shared<SCIOCPCore>(),
+        [=]() -> SharedPtrSCSession { return std::make_shared<SCGameSession>(); },
+        100
+    );
 
-    // 스레드의 개수는 core 개수 혹은 1.5배 정도가 좋음. 그보다 많아지면 context switching만 일어나기 때문.
+    bool bStartSuccedded = ServerService->Start();
+    assert(bStartSuccedded == true && "bStartSuccedded == false");
+
     for (int32 i = 0; i < 5; i++)
     {
         SCThreadManager::GetInstance().Launch([=]()
             {
                 while (true)
                 {
-                    GIOCPCore.Dispatch();
+                    ServerService->GetIOCPCore()->Dispatch();
                 }
             });
     }
