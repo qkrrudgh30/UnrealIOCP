@@ -70,6 +70,17 @@ public:
 		: SCIOCPEvent(EEventType::Send) 
 	{
 	}
+
+public:
+	std::vector<BYTE> SendBuffer;
+		// 임시 코드
 };
 
-
+class SCDisconnectEvent : public SCIOCPEvent
+{
+public:
+	SCDisconnectEvent()
+		: SCIOCPEvent(EEventType::Disconnect)
+	{
+	}
+};

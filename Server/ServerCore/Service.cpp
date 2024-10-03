@@ -30,6 +30,7 @@ void SCService::Close()
 SharedPtrSCSession SCService::CreateSession()
 {
     SharedPtrSCSession Session = SessionFactory();
+    Session->SetOwnerService(shared_from_this());
 
     if (IOCPCore->Register(Session) == false)
     {
@@ -101,7 +102,20 @@ bool SCClientService::Start()
 {
     SCService::Start();
 
-    //@TODO
+    if (CanStart() == false)
+    {
+        return false;
+    }
+
+    const int32 MaxSessionCount = GetMaxSessionCount();
+    for (int32 i = 0; i < MaxSessionCount; i++)
+    {
+        SharedPtrSCSession ServerSession = CreateSession();
+        if (ServerSession->Connect() == false)
+        {
+            return false;
+        }
+    }
 
     return true;
 }

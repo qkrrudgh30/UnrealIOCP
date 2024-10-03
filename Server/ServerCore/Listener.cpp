@@ -107,8 +107,8 @@ void SCListener::ProcessAccept(SCAcceptEvent* InAcceptEvent)
     }
 
     ClientSession->SetNetAddress(SCNetAddress(ClientSocketAddress));
-
-    cout << "Client Connected!" << endl;
+    ClientSession->Connect();
+    //cout << "Client Connected!" << endl;
 
     //@TODO: 
 
