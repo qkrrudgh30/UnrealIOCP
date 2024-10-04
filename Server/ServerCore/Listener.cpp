@@ -117,14 +117,14 @@ void SCListener::ProcessAccept(SCAcceptEvent* InAcceptEvent)
 
 void SCListener::RegisterAccept(SCAcceptEvent* InAcceptEvent)
 {
-    //SharedPtrSCSession ClientSession = std::make_shared<SCSession>();
     SharedPtrSCSession ClientSession = ServerService->CreateSession();
 
     InAcceptEvent->Init();
     InAcceptEvent->ClientSession = ClientSession;
 
     DWORD ReceivedBytes = 0;
-    if (false == SCSocketUtils::AcceptEx(ServerSocket, ClientSession->GetSocket(), ClientSession->RecvBuffer, 0, sizeof(SOCKADDR_IN) + 16, sizeof(SOCKADDR_IN) + 16, OUT & ReceivedBytes, static_cast<LPOVERLAPPED>(InAcceptEvent)))
+    //if (false == SCSocketUtils::AcceptEx(ServerSocket, ClientSession->GetSocket(), ClientSession->RecvBuffer, 0, sizeof(SOCKADDR_IN) + 16, sizeof(SOCKADDR_IN) + 16, OUT & ReceivedBytes, static_cast<LPOVERLAPPED>(InAcceptEvent)))
+    if (false == SCSocketUtils::AcceptEx(ServerSocket, ClientSession->GetSocket(), ClientSession->RecvBuffer.GetCurrentWritePosition(), 0, sizeof(SOCKADDR_IN) + 16, sizeof(SOCKADDR_IN) + 16, OUT & ReceivedBytes, static_cast<LPOVERLAPPED>(InAcceptEvent)))
     {
         const int32 ErrorCode = ::WSAGetLastError();
         if (ErrorCode != WSA_IO_PENDING)

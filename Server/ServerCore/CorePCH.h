@@ -32,5 +32,6 @@
 #include "Listener.h"
 #include "Session.h"
 #include "Service.h"
+#include "RecvBuffer.h"
 
 using namespace std;

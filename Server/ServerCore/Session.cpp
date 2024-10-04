@@ -2,6 +2,7 @@
 #include "Session.h"
 
 SCSession::SCSession()
+	: RecvBuffer(BUFFER_SIZE)
 {
 	Socket = SCSocketUtils::CreateSocket();
 }
@@ -124,8 +125,10 @@ void SCSession::RegisterRecv()
 	RecvEvent.OwnerIOCPObject = shared_from_this(); // ADD_REF
 
 	WSABUF WindowsSocketAPIBuffer;
-	WindowsSocketAPIBuffer.buf = reinterpret_cast<char*>(RecvBuffer);
-	WindowsSocketAPIBuffer.len = len32(RecvBuffer);
+	//WindowsSocketAPIBuffer.buf = reinterpret_cast<char*>(RecvBuffer);
+	//WindowsSocketAPIBuffer.len = len32(RecvBuffer);
+	WindowsSocketAPIBuffer.buf = reinterpret_cast<char*>(RecvBuffer.GetCurrentWritePosition());
+	WindowsSocketAPIBuffer.len = RecvBuffer.GetSlot();
 
 	DWORD NumberOfBytes = 0;
 	DWORD Flags = 0;
@@ -144,16 +147,25 @@ void SCSession::ProcessRecv(int32 InLength)
 {
 	RecvEvent.OwnerIOCPObject = nullptr; // RELEASE_REF
 
-	if (InLength == 0)
+	//if (InLength == 0)
+	if (RecvBuffer.OnWrite(InLength) == false)
 	{
-		Disconnect(L"Recv 0");
+		Disconnect(L"SCRecvBuffer::OnWrite() overflow.");
+		return;
+	}
+
+	int32 CountToRead = RecvBuffer.GetCountToRead();
+	int32 ProcessLen = OnRecv(RecvBuffer.GetCurrentReadPosition(), CountToRead);
+	if (ProcessLen < 0 || CountToRead < ProcessLen || RecvBuffer.OnRead(ProcessLen) == false)
+	{
+		Disconnect(L"SCRecvBuffer::OnRecv() overflow.");
 		return;
 	}
 
 	cout << "Recv Data Len = " << InLength << endl;
 
-	OnRecv(RecvBuffer, InLength);
-		// TCP의 특성상, RecvBuffer에 들어온 데이터가 완벽하게 다 받은 상태라는 보장은 없음에 주의. 이에대한 대응도 후에 배움. 
+	//OnRecv(RecvBuffer, InLength);
+	RecvBuffer.Clean();
 
 	RegisterRecv();
 }

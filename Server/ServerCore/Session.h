@@ -4,9 +4,12 @@
 #include "NetAddress.h"
 #include "IOCPEvent.h"
 #include "Service.h"
+#include "RecvBuffer.h"
 
 class SCSession : public SCIOCPObject
 {
+    enum { BUFFER_SIZE = 0x10000 }; // 64KB
+
 public:
     SCSession();
 
@@ -111,7 +114,7 @@ private:
     SCDisconnectEvent DisconnectEvent;
 
 public:
-    BYTE RecvBuffer[1000];
-        // 임시 코드
+    //BYTE RecvBuffer[1000];
+    SCRecvBuffer RecvBuffer;
 
 };
