@@ -141,3 +141,5 @@ packages/
 Server/Binaries
 Server/Libraries
 Server/Intermediate
+Client/Source/ProtobufCore
+Client/Content/StarterContent
