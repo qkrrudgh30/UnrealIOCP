@@ -33,5 +33,6 @@
 #include "Session.h"
 #include "Service.h"
 #include "RecvBuffer.h"
+#include "SendBuffer.h"
 
 using namespace std;

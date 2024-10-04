@@ -1,5 +1,7 @@
 #include "pch.h"
+#include "ClientSession.h"
 
+/*
 class GSClientSession : public SCSession
 {
 public:
@@ -11,9 +13,10 @@ public:
     virtual int32 OnRecv(BYTE* InBuffer, int32 InLength) override
     {
         cout << "OnRecv Len = " << InLength << endl;
-        Send(InBuffer, InLength);
 
-        this_thread::sleep_for(1s);
+        SharedPtrSCSendBuffer SendBuffer = std::make_shared<SCSendBuffer>();
+        SendBuffer->CopyData(InBuffer, InLength);
+        Send(SendBuffer);
 
         return InLength;
     }
@@ -24,6 +27,7 @@ public:
     }
 
 };
+*/
 
 int main()
 {

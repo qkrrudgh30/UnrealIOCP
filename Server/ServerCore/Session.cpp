@@ -28,7 +28,8 @@ void SCSession::Dispatch(SCIOCPEvent* InIOCPEvent, int32 InNumberOfBytes)
 		ProcessRecv(InNumberOfBytes);
 		break;
 	case EEventType::Send:
-		ProcessSend(static_cast<SCSendEvent*>(InIOCPEvent), InNumberOfBytes);
+		//ProcessSend(static_cast<SCSendEvent*>(InIOCPEvent), InNumberOfBytes);
+		ProcessSend(InNumberOfBytes);
 		break;
 	case EEventType::Disconnect:
 		ProcessDisconnect();
@@ -170,45 +171,93 @@ void SCSession::ProcessRecv(int32 InLength)
 	RegisterRecv();
 }
 
-void SCSession::Send(BYTE* InSendBuffer, int32 InLength)
-{
-	SCSendEvent* SendEvent = new SCSendEvent();
-	SendEvent->OwnerIOCPObject = shared_from_this(); // ADD_REF
-	SendEvent->SendBuffer.resize(InLength);
-	::memcpy(SendEvent->SendBuffer.data(), InSendBuffer, InLength);
-
-	WRITE_LOCK;
-	RegisterSend(SendEvent);
-}
-
-void SCSession::RegisterSend(SCSendEvent* InSendEvent)
+void SCSession::Send(SharedPtrSCSendBuffer InSendBuffer)
 {
 	if (IsConnected() == false)
-		return;
-
-	WSABUF wsaBuf;
-	wsaBuf.buf = (char*)InSendEvent->SendBuffer.data();
-	wsaBuf.len = (ULONG)InSendEvent->SendBuffer.size();
-
-	DWORD numOfBytes = 0;
-	if (SOCKET_ERROR == ::WSASend(Socket, &wsaBuf, 1, OUT & numOfBytes, 0, InSendEvent, nullptr))
 	{
-		int32 errorCode = ::WSAGetLastError();
-		if (errorCode != WSA_IO_PENDING)
+		return;
+	}
+
+	bool bIsRegisterSend = false;
+
+	{
+		WRITE_LOCK;
+
+		SendBufferQueue.push(InSendBuffer);
+
+		if (bIsSendBufferRegistered.exchange(true) == false)
 		{
-			HandleError(errorCode);
-			InSendEvent->OwnerIOCPObject = nullptr; // RELEASE_REF
-			delete InSendEvent;
-			InSendEvent = nullptr;
+			bIsRegisterSend = true;
+		}
+
+		if (bIsRegisterSend == true)
+		{
+			RegisterSend();
 		}
 	}
 }
 
-void SCSession::ProcessSend(SCSendEvent* InSendEvent, int32 InLength)
+void SCSession::RegisterSend()
 {
-	InSendEvent->OwnerIOCPObject = nullptr; // RELEASE_REF
-	delete InSendEvent;
-	InSendEvent = nullptr;
+	if (IsConnected() == false)
+		return;
+
+	SendEvent.Init();
+	SendEvent.OwnerIOCPObject = shared_from_this(); // ADD_REF
+
+	{
+		WRITE_LOCK;
+
+		int32 TotalWriteCount = 0;
+		while (SendBufferQueue.empty() == false)
+		{
+			SharedPtrSCSendBuffer SendBuffer = SendBufferQueue.front();
+
+			TotalWriteCount += SendBuffer->GetCount();
+
+			SendBufferQueue.pop();
+			SendEvent.SendBuffers.push_back(SendBuffer);
+		}
+	}
+
+	//WSABUF wsaBuf;
+	//wsaBuf.buf = (char*)InSendEvent->SendBuffer.data();
+	//wsaBuf.len = (ULONG)InSendEvent->SendBuffer.size();
+	std::vector<WSABUF> wsaBufs;
+	wsaBufs.reserve(SendEvent.SendBuffers.size());
+	for (SharedPtrSCSendBuffer SendBuffer : SendEvent.SendBuffers)
+	{
+		WSABUF wsaBuf;
+		wsaBuf.buf = reinterpret_cast<char*>(SendBuffer->GetBuffer());
+		wsaBuf.len = static_cast<LONG>(SendBuffer->GetCount());
+		wsaBufs.push_back(wsaBuf);
+	}
+
+	DWORD numOfBytes = 0;
+	//if (SOCKET_ERROR == ::WSASend(Socket, &wsaBuf, 1, OUT & numOfBytes, 0, InSendEvent, nullptr))
+	if (SOCKET_ERROR == ::WSASend(Socket, wsaBufs.data(), static_cast<DWORD>(wsaBufs.size()), OUT & numOfBytes, 0, &SendEvent, nullptr))
+	{
+		int32 ErrorCode = ::WSAGetLastError();
+		if (ErrorCode != WSA_IO_PENDING)
+		{
+			HandleError(ErrorCode);
+			//InSendEvent->OwnerIOCPObject = nullptr; // RELEASE_REF
+			SendEvent.OwnerIOCPObject = nullptr; // RELEASE_REF
+			//xdelete(InSendEvent);
+			SendEvent.SendBuffers.clear();
+			bIsSendBufferRegistered.store(false);
+		}
+	}
+}
+
+void SCSession::ProcessSend(int32 InLength)
+{
+	//InSendEvent->OwnerIOCPObject = nullptr; // RELEASE_REF
+	//delete InSendEvent;
+	//InSendEvent = nullptr;
+	SendEvent.OwnerIOCPObject = nullptr; // RELEASE_REF
+	SendEvent.SendBuffers.clear();
+
 
 	if (InLength == 0)
 	{
@@ -217,6 +266,12 @@ void SCSession::ProcessSend(SCSendEvent* InSendEvent, int32 InLength)
 	}
 
 	OnSend(InLength);
+
+	WRITE_LOCK;
+	if (SendBufferQueue.empty())
+		bIsSendBufferRegistered.store(false);
+	else
+		RegisterSend();
 }
 
 void SCSession::Disconnect(const WCHAR* InCause)

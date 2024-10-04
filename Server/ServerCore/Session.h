@@ -67,15 +67,15 @@ private:
 #pragma region Send
 
 public:
-    void Send(BYTE* InSendBuffer, int32 InLength);
+    void Send(SharedPtrSCSendBuffer InSendBuffer);
 
 protected:
     virtual void OnSend(int32 InLength) {}
 
 private:
-    void RegisterSend(SCSendEvent* InSendEvent);
+    void RegisterSend();
 
-    void ProcessSend(SCSendEvent* InSendEvent, int32 InLength);
+    void ProcessSend(int32 InLength);
 
 #pragma endregion
 
@@ -112,6 +112,10 @@ private:
     SCSendEvent SendEvent;
 
     SCDisconnectEvent DisconnectEvent;
+
+    std::queue<SharedPtrSCSendBuffer> SendBufferQueue;
+
+    std::atomic<bool> bIsSendBufferRegistered = false;
 
 public:
     //BYTE RecvBuffer[1000];
