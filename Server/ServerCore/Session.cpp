@@ -283,9 +283,9 @@ void SCSession::Disconnect(const WCHAR* InCause)
 
 	wcout << "Disconnect : " << InCause << endl;
 
-	OnDisconnected();
-	SCSocketUtils::Close(Socket);
-	GetOwnerService()->ReleaseSession(GetSession());
+	//OnDisconnected();
+	//SCSocketUtils::Close(Socket);
+	//GetOwnerService()->ReleaseSession(GetSession());
 
 	RegisterDisconnect();
 }
@@ -311,4 +311,45 @@ bool SCSession::RegisterDisconnect()
 void SCSession::ProcessDisconnect()
 {
 	DisconnectEvent.OwnerIOCPObject = nullptr; // RELEASE_REF
+
+	OnDisconnected(); // 컨텐츠 코드에서 재정의
+	GetOwnerService()->ReleaseSession(GetSession());
+}
+
+SCPacketSession::SCPacketSession()
+{
+}
+
+SCPacketSession::~SCPacketSession()
+{
+}
+
+int32 SCPacketSession::OnRecv(BYTE* InBuffer, int32 InBufferLength)
+{
+	int32 CurrentProcessedBufferLength = 0;
+
+	// [size(2)][id(2)][data....][size(2)][id(2)][data....] 중에 어느정도 받았는지를 알 수 없음.
+	while (true)
+	{
+		int32 BufferLengthToProcess = InBufferLength - CurrentProcessedBufferLength;
+		// 최소한 헤더(지금은 size와 id부분)는 파싱할 수 있어야 한다
+		if (BufferLengthToProcess < sizeof(SCPacketHeader))
+		{
+			break;
+		}
+
+		SCPacketHeader PacketHeader = *(reinterpret_cast<SCPacketHeader*>(&InBuffer[CurrentProcessedBufferLength]));
+		// 헤더에 기록된 패킷 크기를 파싱할 수 있어야 한다
+		if (BufferLengthToProcess < PacketHeader.PacketSize)
+		{
+			break;
+		}
+
+		// 패킷 조립 성공
+		OnRecvPacket(&InBuffer[CurrentProcessedBufferLength], PacketHeader.PacketSize);
+
+		CurrentProcessedBufferLength += PacketHeader.PacketSize;
+	}
+
+	return CurrentProcessedBufferLength;
 }

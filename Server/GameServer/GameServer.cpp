@@ -1,33 +1,6 @@
 #include "pch.h"
 #include "ClientSession.h"
-
-/*
-class GSClientSession : public SCSession
-{
-public:
-    ~GSClientSession()
-    {
-        cout << "~GSClientSession ()" << endl;
-    }
-
-    virtual int32 OnRecv(BYTE* InBuffer, int32 InLength) override
-    {
-        cout << "OnRecv Len = " << InLength << endl;
-
-        SharedPtrSCSendBuffer SendBuffer = std::make_shared<SCSendBuffer>();
-        SendBuffer->CopyData(InBuffer, InLength);
-        Send(SendBuffer);
-
-        return InLength;
-    }
-
-    virtual void OnSend(int32 InLength) override
-    {
-        cout << "OnSend Len = " << InLength << endl;
-    }
-
-};
-*/
+#include "ClientSessionManager.h"
 
 int main()
 {
@@ -52,6 +25,22 @@ int main()
                     ServerService->GetIOCPCore()->Dispatch();
                 }
             });
+    }
+
+    char DataToSend[1000] = "Hello, Client!";
+
+    while (true)
+    {
+        SharedPtrSCSendBuffer BufferToSend = make_shared<SCSendBuffer>(4096);
+
+        BYTE* Buffer = BufferToSend->GetBuffer();
+        ((SCPacketHeader*)Buffer)->PacketSize = (sizeof(DataToSend) + sizeof(SCPacketHeader));
+        ((SCPacketHeader*)Buffer)->PacketID = 1; // 1 : Hello Msg
+        ::memcpy(&Buffer[4], DataToSend, sizeof(DataToSend));
+
+        GSClientSessionManager::GetInstance().Broadcast(BufferToSend);
+
+        this_thread::sleep_for(250ms);
     }
 
     SCThreadManager::GetInstance().Join();

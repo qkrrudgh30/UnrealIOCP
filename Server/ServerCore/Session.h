@@ -122,3 +122,24 @@ public:
     SCRecvBuffer RecvBuffer;
 
 };
+
+struct SCPacketHeader
+{
+    uint16 PacketSize; // 특정 패킷에 가변적인 데이터(이름, 문자열, 주변모든 유저들에게 보내줘야하는 데이터, ...)때문에 size 필요.
+    uint16 PacketID; // 프로토콜ID (ex. 1=로그인, 2=이동요청, ...)
+    // [size(2)][id(2)][data....][size(2)][id(2)][data....]...
+};
+
+class SCPacketSession : public SCSession
+{
+public:
+    SCPacketSession();
+    virtual ~SCPacketSession();
+
+    SharedPtrSCPacketSession GetPacketSession() { return static_pointer_cast<SCPacketSession>(shared_from_this()); }
+
+protected:
+    virtual int32		OnRecv(BYTE* InBuffer, int32 InBufferLength) final;
+    virtual int32		OnRecvPacket(BYTE* InBuffer, int32 InBufferLength) abstract;
+
+};

@@ -12,17 +12,12 @@ void GSClientSession::OnDisconnected()
 	GSClientSessionManager::GetInstance().Remove(static_pointer_cast<GSClientSession>(shared_from_this()));
 }
 
-int32 GSClientSession::OnRecv(BYTE* InBuffer, int32 InLength)
+int32 GSClientSession::OnRecvPacket(BYTE* InBuffer, int32 InBufferLength)
 {
-	// Echo
-	cout << "OnRecv Len = " << InLength << endl;
+	SCPacketHeader PacketHeader = *((SCPacketHeader*)InBuffer);
+	cout << "Packet ID : " << PacketHeader.PacketID << "Size : " << PacketHeader.PacketSize << endl;
 
-	SharedPtrSCSendBuffer SendBuffer = make_shared<SCSendBuffer>(4096);
-	SendBuffer->CopyData(InBuffer, InLength);
-
-	GSClientSessionManager::GetInstance().Broadcast(SendBuffer);
-
-	return InLength;
+	return InBufferLength;
 }
 
 void GSClientSession::OnSend(int32 InLength)
