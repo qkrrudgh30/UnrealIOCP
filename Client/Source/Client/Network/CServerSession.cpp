@@ -3,6 +3,8 @@
 
 #include "CServerSession.h"
 
+#include "Sockets.h"
+
 
 CServerSession::CServerSession(FSocket* InSocket)
 	: Socket(InSocket)
@@ -15,6 +17,27 @@ CServerSession::~CServerSession()
 }
 
 void CServerSession::Run()
+{
+	RecvThread = MakeShared<CRecvThread>(Socket, AsShared());
+	SendThread = MakeShared<CSendThread>(Socket, AsShared());
+}
+
+void CServerSession::Disconnect()
+{
+	if (RecvThread)
+	{
+		RecvThread->Destroy();
+		RecvThread = nullptr;
+	}
+
+	if (SendThread)
+	{
+		SendThread->Destroy();
+		SendThread = nullptr;
+	}
+}
+
+void CServerSession::HandleRecvPackets()
 {
 	while (true)
 	{
@@ -29,10 +52,7 @@ void CServerSession::Run()
 	}
 }
 
-void CServerSession::HandleRecvPackets()
+void CServerSession::SendPacket(SharedPtrCSendBuffer InSendBuffer)
 {
-}
-
-void CServerSession::Disconnect()
-{
+	SendPacketQueue.Enqueue(InSendBuffer);
 }

@@ -116,11 +116,11 @@ bool CRecvThread::ReceivePacket(TArray<uint8>& OutPacket)
 bool CRecvThread::CheckReceivedPacketSize(uint8* Results, int32 Size)
 {
 	uint32 PendingDataSize = 0;
-	if (Socket == nullptr || Socket->GetConnectionState() != ESocketConnectionState::SCS_Connected) // 소켓이 없거나 연결이 끊겼을때
-	{
-		Socket = nullptr;
-		return false;
-	}
+	// if (Socket == nullptr || Socket->GetConnectionState() != ESocketConnectionState::SCS_Connected) // 소켓이 없거나 연결이 끊겼을때
+	// {
+	// 	Socket = nullptr;
+	// 	return false;
+	// }
 	
 	if (Socket->HasPendingData(PendingDataSize) == false || PendingDataSize <= 0) // 접속 종료시
 		return false;
@@ -138,6 +138,77 @@ bool CRecvThread::CheckReceivedPacketSize(uint8* Results, int32 Size)
 
 		Offset += NumRead;
 		Size -= NumRead;
+	}
+
+	return true;
+}
+
+CSendThread::CSendThread(FSocket* InSocket, TSharedPtr<CServerSession> InSession)
+	: Socket(InSocket)
+	, ServerSession(InSession)
+{
+	SendThread = FRunnableThread::Create(this, TEXT("SendThread"));
+}
+
+CSendThread::~CSendThread()
+{
+}
+
+bool CSendThread::Init()
+{
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Initialize SendThread")));
+
+	return FRunnable::Init();
+}
+
+uint32 CSendThread::Run()
+{
+	while (bIsRunning)
+	{
+		SharedPtrCSendBuffer SendBuffer;
+
+		if (TSharedPtr<CServerSession> Session = ServerSession.Pin()) // Recv 패킷때와 반대. 
+		{
+			if (Session->SendPacketQueue.Dequeue(OUT SendBuffer))
+			{
+				SendPacket(SendBuffer);
+			}
+		}
+
+		//@TODO: Sleep() 함수 호출.
+	}
+
+	return 0;
+}
+
+void CSendThread::Exit()
+{
+	FRunnable::Exit();
+}
+
+bool CSendThread::SendPacket(SharedPtrCSendBuffer InSendBuffer)
+{
+	if (CheckSentPacketSize(InSendBuffer->GetBuffer(), InSendBuffer->GetCount()) == false) // 조립이 이미 다 되어있을테니까 일단 보내기만 함.
+		return false;
+
+	return true;
+}
+
+void CSendThread::Destroy()
+{
+	bIsRunning = false;
+}
+
+bool CSendThread::CheckSentPacketSize(const uint8* InBuffer, int32 InSize)
+{
+	while (0 < InSize)
+	{
+		int32 BytesSent = 0;
+		if (Socket->Send(InBuffer, InSize, BytesSent) == false)
+			return false;
+
+		InSize -= BytesSent;
+		InBuffer += BytesSent;
 	}
 
 	return true;

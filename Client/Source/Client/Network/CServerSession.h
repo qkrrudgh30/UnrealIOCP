@@ -3,9 +3,10 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Client.h"
+#include "CNetworkThread.h"
 
 class FSocket;
-class UCRecvThread;
 
 /**
  * 
@@ -19,17 +20,21 @@ public:
 public:
 	void Run();
 
+	void Disconnect();
+
 	void HandleRecvPackets();
 
-	void Disconnect();
+	void SendPacket(SharedPtrCSendBuffer InSendBuffer);
 
 public:
 	FSocket* Socket;
 
-	TSharedPtr<UCRecvThread> RecvThread;
+	TSharedPtr<CRecvThread> RecvThread;
 
 	TQueue<TArray<uint8>> RecvPacketQueue;
-		// GameThread와 NetworkThread가 데이터를 주고 받는 공용 큐.
-		// std::queue는 thread-safe하지 않음. 굳이 쓰겠다면 lock을 걸고 써야함. TQueue<>는 lock-free 방식으로 구현되어서 thread-safe함.
+
+	TSharedPtr<CSendThread> SendThread;
+
+	TQueue<SharedPtrCSendBuffer> SendPacketQueue;
 	
 };

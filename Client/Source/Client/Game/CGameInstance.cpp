@@ -7,7 +7,7 @@
 #include "SocketSubsystem.h"
 #include "Interfaces/IPv4/IPv4Address.h"
 #include "Kismet/KismetSystemLibrary.h"
-#include "Client/Network/CServerSession.h"
+#include "CServerSession.h"
 
 void UCGameInstance::Init()
 {

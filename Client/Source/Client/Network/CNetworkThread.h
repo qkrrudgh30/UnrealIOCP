@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Client.h"
 #include "Containers/Queue.h"
 
 class FSocket;
@@ -76,6 +77,37 @@ protected:
 	FRunnableThread* RecvThread = nullptr;
 	bool bIsRunning = true; // 밖(GameInstance)에서 Running을 false로 꺼버리면 해당 스레드도 종료되는 방식.
 	FSocket* Socket;
+	TWeakPtr<CServerSession> ServerSession;
+	
+};
+
+class CLIENT_API CSendThread : public FRunnable
+{
+public:
+	CSendThread(FSocket* InSocket, TSharedPtr<CServerSession> InSession);
+	
+	~CSendThread();
+
+	virtual bool Init() override;
+	
+	virtual uint32 Run() override;
+	
+	virtual void Exit() override;
+
+	bool SendPacket(SharedPtrCSendBuffer InSendBuffer);
+
+	void Destroy();
+
+private:
+	bool CheckSentPacketSize(const uint8* InBuffer, int32 InSize);
+
+protected:
+	FRunnableThread* SendThread = nullptr;
+	
+	bool bIsRunning = true;
+	
+	FSocket* Socket;
+	
 	TWeakPtr<CServerSession> ServerSession;
 	
 };
