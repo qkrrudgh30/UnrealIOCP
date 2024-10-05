@@ -7,6 +7,7 @@
 #include "SocketSubsystem.h"
 #include "Interfaces/IPv4/IPv4Address.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Client/Network/CServerSession.h"
 
 void UCGameInstance::Init()
 {
@@ -38,6 +39,9 @@ void UCGameInstance::ConnectToServer()
 	bool bIsConnected = ClientSocket->Connect(*AddressToConnect);
 	if (bIsConnected == true)
 	{
+		ServerSession = MakeShared<CServerSession>(ClientSocket);
+		ServerSession->Run();
+		
 		UKismetSystemLibrary::PrintString(this, FString::Printf(TEXT("Connection Success!")), true, true, FLinearColor::Red, 60.f);
 
 		while (true)
@@ -74,6 +78,14 @@ void UCGameInstance::ConnectToServer()
 	{
 		UKismetSystemLibrary::PrintString(this, FString::Printf(TEXT("Connection Failed...")), true, true, FLinearColor::Red, 60.f);
 	}
+}
+
+void UCGameInstance::HandleRecvPackets()
+{
+	if (ClientSocket == nullptr || ServerSession == nullptr)
+		return;
+
+	ServerSession->HandleRecvPackets();
 }
 
 void UCGameInstance::DisconnectFromServer()

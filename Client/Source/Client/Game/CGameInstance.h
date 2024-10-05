@@ -6,6 +6,8 @@
 #include "Engine/GameInstance.h"
 #include "CGameInstance.generated.h"
 
+class CServerSession;
+
 /**
  * 
  */
@@ -22,6 +24,8 @@ public:
 protected:
 	void ConnectToServer();
 
+	void HandleRecvPackets();
+
 	void DisconnectFromServer();
 
 public:
@@ -30,5 +34,7 @@ public:
 	FString ServerIPAddress = TEXT("127.0.0.1");
 
 	int16 ServerPortNumber = 8080;
+
+	TSharedPtr<CServerSession> ServerSession;
 	
 };
