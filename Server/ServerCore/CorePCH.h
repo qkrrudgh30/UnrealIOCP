@@ -34,5 +34,7 @@
 #include "Service.h"
 #include "RecvBuffer.h"
 #include "SendBuffer.h"
+#include "ReadableBuffer.h"
+#include "WritableBuffer.h"
 
 using namespace std;
