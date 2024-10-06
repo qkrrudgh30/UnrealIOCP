@@ -5,7 +5,7 @@ SCReadableBuffer::SCReadableBuffer()
 {
 }
 
-SCReadableBuffer::SCReadableBuffer(BYTE* InBuffer, uint32 InCapacity, uint32 InCurrentReadIndex = 0)
+SCReadableBuffer::SCReadableBuffer(BYTE* InBuffer, uint32 InCapacity, uint32 InCurrentReadIndex)
 	: Buffer(InBuffer)
 	, Capacity(InCapacity)
 	, CurrentReadIndex(InCurrentReadIndex)

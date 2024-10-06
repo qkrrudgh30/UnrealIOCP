@@ -19,9 +19,6 @@ public:
     T* Reserve();
 
     template<typename T>
-    SCWritableBuffer& operator<<(const T& InStartPtrToWrite);
-
-    template<typename T>
     SCWritableBuffer& operator<<(T&& InStartPtrToWrite);
 
 private:
@@ -34,7 +31,7 @@ private:
 template<typename T>
 T* SCWritableBuffer::Reserve()
 {
-    if (GetFreeSize() < sizeof(T))
+    if (GetSlot() < sizeof(T))
         return nullptr;
 
     T* ret = reinterpret_cast<T*>(&Buffer[CurrentWriteIndex]);
@@ -43,17 +40,10 @@ T* SCWritableBuffer::Reserve()
 }
 
 template<typename T>
-SCWritableBuffer& SCWritableBuffer::operator<<(const T& InStartPtrToWrite)
-{
-    *reinterpret_cast<T*>(&Buffer[CurrentWriteIndex]) = InStartPtrToWrite;
-    CurrentWriteIndex += sizeof(T);
-    return *this;
-}
-
-template<typename T>
 SCWritableBuffer& SCWritableBuffer::operator<<(T&& InStartPtrToWrite)
 {
-    *reinterpret_cast<T*>(&Buffer[CurrentWriteIndex]) = std::move(InStartPtrToWrite);
+    using DataType = std::remove_reference_t<T>;
+    *reinterpret_cast<DataType*>(&Buffer[CurrentWriteIndex]) = std::move(InStartPtrToWrite);
     CurrentWriteIndex += sizeof(T);
     return *this;
 }
