@@ -116,11 +116,11 @@ bool CRecvThread::ReceivePacket(TArray<uint8>& OutPacket)
 bool CRecvThread::CheckReceivedPacketSize(uint8* Results, int32 Size)
 {
 	uint32 PendingDataSize = 0;
-	// if (Socket == nullptr || Socket->GetConnectionState() != ESocketConnectionState::SCS_Connected) // 소켓이 없거나 연결이 끊겼을때
-	// {
-	// 	Socket = nullptr;
-	// 	return false;
-	// }
+	if (Socket == nullptr || Socket->GetConnectionState() != ESocketConnectionState::SCS_Connected) // 소켓이 없거나 연결이 끊겼을때
+	{
+		Socket = nullptr;
+		return false;
+	}
 	
 	if (Socket->HasPendingData(PendingDataSize) == false || PendingDataSize <= 0) // 접속 종료시
 		return false;

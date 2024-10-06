@@ -28,5 +28,16 @@ public class Client : ModuleRules
 			"Client/Network/",
 			"Client/Game/",
 		});
+		
+		PublicIncludePaths.AddRange(new string[] 
+		{ 
+			Path.Combine(ModuleDirectory, "../../../Server/ServerCore"),
+		});
+        
+		PublicAdditionalLibraries.AddRange(new string[] 
+		{ 
+			Path.Combine(ModuleDirectory, "../../../Server/Libraries/ServerCore/Debug", "ServerCore.lib"),
+			Path.Combine(ModuleDirectory, "../../../Server/Libraries/ServerCore/Release", "ServerCore.lib"),
+		});
 	}
 }

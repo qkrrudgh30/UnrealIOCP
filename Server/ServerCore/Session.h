@@ -139,7 +139,7 @@ public:
     SharedPtrSCPacketSession GetPacketSession() { return static_pointer_cast<SCPacketSession>(shared_from_this()); }
 
 protected:
-    virtual int32		OnRecv(BYTE* InBuffer, int32 InBufferLength) final;
-    virtual int32		OnRecvPacket(BYTE* InBuffer, int32 InBufferLength) abstract;
+    virtual int32 OnRecv(BYTE* InBuffer, int32 InBufferLength) final;
+    virtual void OnRecvPacket(BYTE* InBuffer, int32 InBufferLength) abstract;
 
 };
