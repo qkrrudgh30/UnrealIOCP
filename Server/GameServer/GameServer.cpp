@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "ClientSession.h"
 #include "ClientSessionManager.h"
+#include "ClientPacketHandler.h"
 
 int main()
 {
@@ -31,48 +32,11 @@ int main()
 
     while (true)
     {
-        //SharedPtrSCSendBuffer BufferToSend = make_shared<SCSendBuffer>(4096);
+        SharedPtrSCSendBuffer SendBuffer = GSClientPacketHandler::Make_S_TEST(7);
+        
+        GSClientSessionManager::GetInstance().Broadcast(SendBuffer);
 
-        //BYTE* Buffer = BufferToSend->GetBuffer();
-        //((SCPacketHeader*)Buffer)->PacketSize = (sizeof(DataToSend) + sizeof(SCPacketHeader));
-        //((SCPacketHeader*)Buffer)->PacketID = 1; // 1 : Hello Msg
-        //::memcpy(&Buffer[4], DataToSend, sizeof(DataToSend));
-
-        //GSClientSessionManager::GetInstance().Broadcast(BufferToSend);
-
-        //this_thread::sleep_for(250ms);
-
-        SharedPtrSCSendBuffer BufferToSend = make_shared<SCSendBuffer>(4096);
-        SCWritableBuffer WritableBuffer(BufferToSend->GetBuffer(), 4096);
-
-        SCPacketHeader* PacketHeader = WritableBuffer.Reserve<SCPacketHeader>();
-        // ID(uint64), HP(uint32), Attack(uint16)
-        WritableBuffer << (uint64)1001 << (uint32)100 << (uint16)10;
-        WritableBuffer.Write(DataToSend, sizeof(DataToSend));
-
-        PacketHeader->PacketSize = WritableBuffer.GetCurrentWriteIndex();
-        PacketHeader->PacketID = 1;
-
-        BufferToSend->Close(WritableBuffer.GetCurrentWritePosition());
-
-        SGameSessionManager::GetInstance().Broadcast(BufferToSend);
-
-        this_thread::sleep_for(250ms);
-
-        //SharedPtrSCSendBuffer BufferToSend = make_shared<SCSendBuffer>(4096);
-        //SCWritableBuffer WritableBuffer(BufferToSend->GetBuffer(), 4096);
-        //
-        //SCPacketHeader* PacketHeader = WritableBuffer.Reserve<SCPacketHeader>();
-        //// ID(uint64), HP(uint32), Attack(uint16)
-        //WritableBuffer << (uint64)1001 << (uint32)100 << (uint16)10;
-        //WritableBuffer.Write(DataToSend, sizeof(DataToSend));
-        //
-        //PacketHeader->PacketSize = WritableBuffer.GetCurrentWriteIndex();
-        //PacketHeader->PacketID = 1;
-        //
-        //GSClientSessionManager::GetInstance().Broadcast(BufferToSend);
-        //
-        //this_thread::sleep_for(250ms);
+        this_thread::sleep_for(1s);
     }
 
     SCThreadManager::GetInstance().Join();

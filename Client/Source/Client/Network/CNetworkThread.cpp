@@ -102,7 +102,7 @@ bool CRecvThread::ReceivePacket(TArray<uint8>& OutPacket)
 	// 패킷 내용 파싱
 	TArray<uint8> PayloadBuffer;
 	const int32 PayloadSize = Header.PacketSize - HeaderSize;
-	if (PayloadSize == 0) // 이 예외처리 구문이 없다면 AddZeroed()에서 크래시남. 0만큼 공간 확보하겠다는 거니까. 가끔 패킷 중에는 내용물이 없을 수 있음 헤더만 있는 경우. 그럴때 문제됨.
+	if (PayloadSize <= 0) // 이 예외처리 구문이 없다면 AddZeroed()에서 크래시남. 0만큼 공간 확보하겠다는 거니까. 가끔 패킷 중에는 내용물이 없을 수 있음 헤더만 있는 경우. 그럴때 문제됨.
 		return true;
 	
 	OutPacket.AddZeroed(PayloadSize);
@@ -116,11 +116,11 @@ bool CRecvThread::ReceivePacket(TArray<uint8>& OutPacket)
 bool CRecvThread::CheckReceivedPacketSize(uint8* Results, int32 Size)
 {
 	uint32 PendingDataSize = 0;
-	// if (Socket == nullptr || Socket->GetConnectionState() != ESocketConnectionState::SCS_Connected) // 소켓이 없거나 연결이 끊겼을때
-	// {
-	// 	Socket = nullptr;
-	// 	return false;
-	// }
+	if (Socket == nullptr || Socket->GetConnectionState() != ESocketConnectionState::SCS_Connected) // 소켓이 없거나 연결이 끊겼을때
+	{
+		Socket = nullptr;
+		return false;
+	}
 	
 	if (Socket->HasPendingData(PendingDataSize) == false || PendingDataSize <= 0) // 접속 종료시
 		return false;
@@ -176,6 +176,7 @@ uint32 CSendThread::Run()
 		}
 
 		//@TODO: Sleep() 함수 호출.
+		FPlatformProcess::Sleep(1.f);
 	}
 
 	return 0;

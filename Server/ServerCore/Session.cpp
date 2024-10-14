@@ -76,12 +76,14 @@ bool SCSession::RegisterConnect()
 		return false;
 	}
 
-	if (SCSocketUtils::SetReuseAddress(Socket, true) == false)
+	bool bResult = SCSocketUtils::SetReuseAddress(Socket, true);
+	if (bResult == false)
 	{
 		return false;
 	}
 
-	if (SCSocketUtils::BindAnyAddress(Socket, 0) == false)
+	bResult = SCSocketUtils::BindAnyAddress(Socket, 0);
+	if (bResult == false)
 	{
 		return false;
 	}
@@ -163,7 +165,7 @@ void SCSession::ProcessRecv(int32 InLength)
 		return;
 	}
 
-	cout << "Recv Data Len = " << InLength << endl;
+	//cout << "Recv Data Len = " << InLength << endl;
 
 	//OnRecv(RecvBuffer, InLength);
 	RecvBuffer.Clean();
@@ -206,7 +208,7 @@ void SCSession::RegisterSend()
 	SendEvent.OwnerIOCPObject = shared_from_this(); // ADD_REF
 
 	{
-		WRITE_LOCK;
+		//WRITE_LOCK;
 
 		int32 TotalWriteCount = 0;
 		while (SendBufferQueue.empty() == false)
@@ -340,7 +342,7 @@ int32 SCPacketSession::OnRecv(BYTE* InBuffer, int32 InBufferLength)
 
 		SCPacketHeader PacketHeader = *(reinterpret_cast<SCPacketHeader*>(&InBuffer[CurrentProcessedBufferLength]));
 		// 헤더에 기록된 패킷 크기를 파싱할 수 있어야 한다
-		if (BufferLengthToProcess < PacketHeader.PacketSize)
+		if (BufferLengthToProcess < static_cast<int32>(PacketHeader.PacketSize))
 		{
 			break;
 		}
@@ -352,4 +354,9 @@ int32 SCPacketSession::OnRecv(BYTE* InBuffer, int32 InBufferLength)
 	}
 
 	return CurrentProcessedBufferLength;
+}
+
+void SCPacketSession::OnSend(int32 InLength)
+{
+	cout << "OnSend(" << InLength << ")" << endl;
 }

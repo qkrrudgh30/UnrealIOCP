@@ -3,17 +3,27 @@
 
 #include "CGameInstance.h"
 
+#include "CReadableBuffer.h"
+#include "CServerPacketHandler.h"
 #include "Sockets.h"
 #include "SocketSubsystem.h"
 #include "Interfaces/IPv4/IPv4Address.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "CServerSession.h"
+#include "CWritableBuffer.h"
 
 void UCGameInstance::Init()
 {
 	Super::Init();
 
 	ConnectToServer();
+}
+
+bool UCGameInstance::Tick(float DeltaTime)
+{
+	HandleRecvPackets();
+	
+	return true;
 }
 
 void UCGameInstance::Shutdown()
@@ -43,36 +53,6 @@ void UCGameInstance::ConnectToServer()
 		ServerSession->Run();
 		
 		UKismetSystemLibrary::PrintString(this, FString::Printf(TEXT("Connection Success!")), true, true, FLinearColor::Red, 60.f);
-
-		while (true)
-		{
-			char SendBuffer[100] = "Hello, Server!";
-			int32 SendBufferLength = 0;
-
-			bool bDidSend = ClientSocket->Send((uint8*)SendBuffer, sizeof(SendBuffer), SendBufferLength);
-			if (bDidSend == false)
-			{
-				UKismetSystemLibrary::PrintString(this, FString::Printf(TEXT("Send Failed...")), true, true, FLinearColor::Red, 60.f);
-				break;
-			}
-
-			UKismetSystemLibrary::PrintString(this, FString::Printf(TEXT("Send Data Length: %d"), SendBufferLength), true, true, FLinearColor::Red, 60.f);
-
-			char RecvBuffer[100] = { 0, };
-			int32 RecvBufferLength = 0;
-			
-			bool bDidRecv = ClientSocket->Recv((uint8*)RecvBuffer, sizeof(RecvBuffer), RecvBufferLength);
-			if (bDidRecv == false)
-			{
-				UKismetSystemLibrary::PrintString(this, FString::Printf(TEXT("Recv Failed...")), true, true, FLinearColor::Red, 60.f);
-				break;
-			}
-
-			UKismetSystemLibrary::PrintString(this, FString::Printf(TEXT("Recv Data: %s"), *FString(RecvBuffer)), true, true, FLinearColor::Red, 60.f);
-			UKismetSystemLibrary::PrintString(this, FString::Printf(TEXT("Recv Data Length: %d"), RecvBufferLength), true, true, FLinearColor::Red, 60.f);
-			
-			FPlatformProcess::Sleep(1.0f);
-		}
 	}
 	else
 	{

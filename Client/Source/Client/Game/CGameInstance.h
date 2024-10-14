@@ -12,12 +12,16 @@ class CServerSession;
  * 
  */
 UCLASS()
-class CLIENT_API UCGameInstance : public UGameInstance
+class CLIENT_API UCGameInstance
+	: public UGameInstance
+	, public FTSTickerObjectBase
 {
 	GENERATED_BODY()
 
 public:
 	virtual void Init() override;
+
+	virtual bool Tick(float DeltaTime) override;
 
 	virtual void Shutdown() override;
 

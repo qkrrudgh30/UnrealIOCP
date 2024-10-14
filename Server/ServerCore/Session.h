@@ -8,6 +8,8 @@
 
 class SCSession : public SCIOCPObject
 {
+    friend class SCListener;
+
     enum { BUFFER_SIZE = 0x10000 }; // 64KB
 
 public:
@@ -141,5 +143,7 @@ public:
 protected:
     virtual int32		OnRecv(BYTE* InBuffer, int32 InBufferLength) final;
     virtual int32		OnRecvPacket(BYTE* InBuffer, int32 InBufferLength) abstract;
+
+    virtual void OnSend(int32 InLength);
 
 };
